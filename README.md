@@ -56,7 +56,7 @@ npm run dev
 ## 📚 项目文档
 
 - **[Docker部署指南](./DEPLOYMENT.md)**: 使用Docker部署应用程序的详细说明。
-- **[服务器部署指南](./scripts/deploy_server.sh)**: 用于设置生产服务器的自动化脚本和指南。
+- **[服务器部署指南](./SERVER_DEPLOYMENT.md)**: 用于设置生产服务器的自动化脚本和指南。
 
 ---
 
