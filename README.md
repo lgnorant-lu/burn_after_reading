@@ -1,63 +1,63 @@
-# Burn After Reading
+# 阅后即焚
 
-🔐 Enterprise-grade secure messaging service with self-destructing messages and files.
+🔐 一个安全的"阅后即焚"风格消息服务，用于分享自毁便笺和文件。
 
-## Project Overview
-
-A production-ready web service implementing the "burn after reading" philosophy. Users can securely share sensitive text or files via one-time-use links with optional password protection and flexible expiration policies.
-
-## ✨ Core Features (Phase 2 Complete)
-
-- ✅ **Self-Destructing Messages** - Text notes deleted after access with multiple expiration options
-- ✅ **Secure File Sharing** - Binary file uploads up to 5MB with streaming downloads  
-- ✅ **Password Protection** - bcrypt-secured optional password protection
-- ✅ **Custom Expiration** - Read-once, 1 hour, 24 hours, or 7 days policies
-- 🎯 **End-to-End Encryption** - Planned for Phase 4 (client-side encryption)
-- ✅ **RESTful API** - 7 endpoints with comprehensive error handling and testing
-
-## 🚀 Quick Start
-
-### Production Deployment
-```bash
-docker build -t burn-after-reading .
-docker run -p 8000:8000 burn-after-reading
-```
-
-### Development Setup
-```bash
-# Recommended: Install with uv
-uv sync
-uv run uvicorn src.main:app --reload --port 8001
-
-# Alternative: Install with pip
-pip install -e .
-uvicorn src.main:app --reload
-```
-
-### Health Check
-```bash
-curl http://localhost:8001/health
-# {"status": "healthy", "version": "0.2.0"}
-```
-
-## 📊 Project Status
-
-- ✅ **Phase 1**: MVP Backend (Completed)
-- ✅ **Phase 2**: Feature Expansion (Completed 2025-06-10)
-- 🎯 **Phase 3**: Frontend Development (Ready to start)
-- 🔄 **Phase 4**: Advanced Security & Polish
-- 🚀 **Phase 5**: Production Deployment
-
-## 🧪 Testing
-
-```bash
-# Run comprehensive API tests
-uv run python test_phase2_api.py
-
-# Database migration (if upgrading from v1)
-uv run python migrate_to_v2.py migrate
-```
+**GitHub仓库地址:** [https://github.com/lgnorant-lu/burn_after_reading](https://github.com/lgnorant-lu/burn_after_reading)
 
 ---
 
-*This project follows the **RIPER-5+ Multidimensional Thinking Protocol** for systematic development.*
+## 🚀 项目概述
+
+本项目提供了一个生产级的Web服务，允许用户通过一次性使用的链接安全地分享敏感文本或文件。它强调隐私和安全，提供了诸如可选的密码保护和多种过期策略等功能。
+
+## ✨ 核心功能
+
+- **自毁消息**: 文本便笺在被阅读一次后将自动删除。
+- **灵活的过期策略**: 可设置便笺在阅读一次、1小时、24小时或7天后过期。
+- **安全文件共享**: 上传和分享文件（最大5MB），文件在被访问后同样会被删除。
+- **密码保护**: 为您的便笺添加一层额外的安全保障，密码使用bcrypt进行哈希处理。
+- **RESTful API**: 定义良好的API，用于创建、检索和管理便笺。
+- **现代化前端**: 使用Vue.js和Tailwind CSS构建的响应式、用户友好的界面。
+- **容器化**: 已准备好通过Docker进行部署。
+
+## 🛠️ 技术栈
+
+- **后端**: Python, FastAPI, SQLAlchemy
+- **前端**: Vue.js, TypeScript, Vite, Tailwind CSS
+- **数据库**: SQLite (默认), 兼容 PostgreSQL
+- **部署**: Docker, Nginx (推荐)
+
+## 📦 快速开始
+
+### Docker (生产环境)
+```bash
+# 构建并运行容器
+docker build -t burn-after-reading .
+docker run -d -p 8000:8000 --name burn-app burn-after-reading
+```
+
+### 本地开发
+
+**后端:**
+```bash
+# 安装依赖 (推荐使用 uv)
+uv pip sync
+# 运行开发服务器
+uv run uvicorn src.main:app --reload --port 8001
+```
+
+**前端:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## 📚 项目文档
+
+- **[Docker部署指南](./DEPLOYMENT.md)**: 使用Docker部署应用程序的详细说明。
+- **[服务器部署指南](./scripts/deploy_server.sh)**: 用于设置生产服务器的自动化脚本和指南。
+
+---
+
+*本项目遵循 **RIPER-5+ 多维思维协议**进行系统化开发，以确保高质量交付。*
