@@ -20,8 +20,8 @@ app = FastAPI(
 )
 
 # CORS (Cross-Origin Resource Sharing) Configuration
-prod_origin = os.environ.get("FRONTEND_URL")
-origins = [
+# Default development origins
+default_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
@@ -31,7 +31,18 @@ origins = [
     "http://localhost:3002",
     "http://127.0.0.1:3002",
 ]
-if prod_origin:
+
+# Get CORS origins from environment variable or use defaults
+cors_origins_env = os.environ.get("CORS_ORIGINS")
+if cors_origins_env:
+    # Parse comma-separated origins from environment
+    origins = [origin.strip() for origin in cors_origins_env.split(",")]
+else:
+    origins = default_origins.copy()
+
+# Add legacy FRONTEND_URL for backward compatibility  
+prod_origin = os.environ.get("FRONTEND_URL")
+if prod_origin and prod_origin not in origins:
     origins.append(prod_origin)
 
 app.add_middleware(
