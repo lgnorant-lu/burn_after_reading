@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "burn-after-reading"
+version = "0.2.0"
+description = "A secure, private way to share self-destructing messages and files."
+authors = [
+  { name="Ignorant-lu", email="Ignorant-lu@gamil.com" },
+]
+license = "MIT"
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "sqlalchemy>=2.0.30",
+    "pydantic>=2.7.1",
+    "bcrypt>=4.3.0",
+    "python-multipart>=0.0.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.hatch.metadata]
+allow-direct-references = true 

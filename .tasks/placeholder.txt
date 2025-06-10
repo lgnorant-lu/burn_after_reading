@@ -1,0 +1,3 @@
+This directory is used to store detailed task files for the project, following the RIPER-5 protocol.
+
+Each task will have its own markdown file, named like `YYYY-MM-DD_N_[TASK_IDENTIFIER].md`. 

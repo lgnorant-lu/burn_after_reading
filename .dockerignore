@@ -1,0 +1,30 @@
+# Git and project management
+.git/
+.gitignore
+.idea/
+.vscode/
+README.md
+Plan.md
+Structure.md
+Context.md
+.tasks/
+final_review_gate.py
+
+# Python virtual environment and cache
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.uv_cache/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Local database
+burn_after_reading.db
+burn_after_reading.db-journal 

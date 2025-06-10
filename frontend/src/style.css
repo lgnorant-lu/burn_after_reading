@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自定义全局样式 */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-900 text-gray-200;
+    background-image: linear-gradient(315deg, #121212 0%, #1e1e2e 74%);
+    min-height: 100vh;
+  }
+
+  @supports (font-variation-settings: normal) {
+    body {
+      font-family: 'Inter var', sans-serif;
+    }
+  }
+
+  .input {
+    @apply w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300;
+  }
+}
+
+@layer components {
+  /* 按钮组件样式 */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900;
+  }
+  
+  .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 text-white focus:ring-gray-500;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white focus:ring-red-500;
+  }
+  
+  /* 输入框样式 */
+  .input {
+    @apply w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  /* 卡片样式 */
+  .card {
+    @apply bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-700;
+  }
+  
+  /* 渐变背景 */
+  .gradient-bg {
+    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900;
+  }
+}
