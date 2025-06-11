@@ -140,4 +140,8 @@ logs/
 .tasks/
 
 # Local test files
-test_*.ps1 
+test_*.ps1
+
+# Frontend build artifacts and dependencies
+/frontend/node_modules
+/frontend/dist 
