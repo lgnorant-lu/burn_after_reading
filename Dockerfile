@@ -29,19 +29,18 @@ ENV CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ENV HOST=0.0.0.0
 ENV PORT=8001
 
-# Create data directory for database and set ownership
-RUN mkdir -p /app/data && \
-    chown -R appuser:appuser /app/data
-
-# Change ownership of application files to non-root user
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
-# Create an entrypoint script
+# Copy the entrypoint script and make it executable *before* changing ownership
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
+
+# Create and set permissions for the data directory
+RUN mkdir -p /app/data
+
+# Now, change ownership of the entire app directory to the non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
 
 # Expose the configured port
 EXPOSE 8001
