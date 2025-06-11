@@ -121,4 +121,23 @@ Logs/         # Detailed log files (Log.md is an index, not the logs themselves)
 *.tmp
 *.bak
 *.swp
-*~ 
+*~
+
+# Database files
+*.db
+*.sqlite3
+burn_after_reading.db
+# If you are using a local database for testing, you should ignore it.
+# We are using a volume in production, but this is a good practice.
+
+# Sensitive files
+*.log
+logs/
+*.pem
+*.key
+
+# Task and Protocol Specific
+.tasks/
+
+# Local test files
+test_*.ps1 
