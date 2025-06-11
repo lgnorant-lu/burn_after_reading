@@ -39,13 +39,16 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
+# Create an entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Expose the configured port
 EXPOSE 8001
 
 # Add health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/health || exit 1
+# The healthcheck is now defined in docker-compose.yml with a start_period for more robustness.
 
-# Command to run the application
-# Use environment variables for host and port configuration
-CMD ["sh", "-c", "uvicorn src.main:app --host ${HOST} --port ${PORT} --root-path /api"] 
+# Use the entrypoint script to run the application
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001", "--root-path", "/api"] 
