@@ -12,7 +12,6 @@ import logging
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine, init_db, get_session
-from .routes import router as api_router
 
 # Configure a basic logger
 logging.basicConfig(level=logging.INFO)
@@ -21,34 +20,12 @@ logger = logging.getLogger(__name__)
 # Create the database tables
 models.Base.metadata.create_all(bind=engine)
 
-# Create the main FastAPI app instance
-root_app = FastAPI(title="Burn After Reading API")
-
-# Mount the API router under the /api prefix
-root_app.mount("/api", api_router)
-
-# Define a health check endpoint at the root level for the entire service
-@root_app.get("/health", status_code=status.HTTP_200_OK, tags=["Service Health"])
-async def health_check():
-    """
-    Checks if the service is running and can connect to the database.
-    This endpoint is used for health checks by Docker and other services.
-    It's at the root path, so docker-compose healthcheck will be http://.../health
-    """
-    try:
-        # Check database connectivity
-        db = next(get_session())
-        db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        logger.error(f"Health check failed: Database connection error - {e}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database connection failed",
-        )
-
-# Use root_app as the main application
-app = root_app
+# Create the FastAPI app instance
+app = FastAPI(
+    title="Burn After Reading",
+    description="A secure, private way to share self-destructing messages and files.",
+    version="0.2.0"
+)
 
 # CORS (Cross-Origin Resource Sharing) Configuration
 # Default development origins
@@ -234,4 +211,24 @@ def cleanup_expired(db: Session = Depends(get_db)):
     手动清理过期笔记（管理员端点）
     """
     count = crud.cleanup_expired_notes(db)
-    return {"message": f"Cleaned up {count} expired notes"} 
+    return {"message": f"Cleaned up {count} expired notes"}
+
+# Define a health check endpoint at the root level for the entire service
+@app.get("/health", status_code=status.HTTP_200_OK, tags=["Service Health"])
+async def health_check():
+    """
+    Checks if the service is running and can connect to the database.
+    This endpoint is used for health checks by Docker and other services.
+    It's at the root path, so docker-compose healthcheck will be http://.../health
+    """
+    try:
+        # Check database connectivity
+        db = next(get_session())
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: Database connection error - {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection failed",
+        ) 
