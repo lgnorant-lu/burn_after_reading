@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: burn-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:///app/data/burn_after_reading.db
+      - CORS_ORIGINS=http://localhost:3001,http://127.0.0.1:3001
+      - HOST=0.0.0.0
+      - PORT=8001
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "8001:8001"
+    networks:
+      - burn-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8001
+    container_name: burn-frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8001
+    ports:
+      - "3001:3000"
+    networks:
+      - burn-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  burn-network:
+    driver: bridge
+    name: burn_after_reading_network
+
+volumes:
+  burn_data:
+    driver: local 
