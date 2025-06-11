@@ -12,7 +12,11 @@ import logging
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine, init_db, get_session
-from src.routes import router as api_router
+from .routes import router as api_router
+
+# Configure a basic logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create the database tables
 models.Base.metadata.create_all(bind=engine)
