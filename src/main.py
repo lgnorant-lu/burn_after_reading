@@ -6,18 +6,45 @@ from typing import Optional
 import io
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import status
+from sqlalchemy.sql import text
+import logging
 
 from . import crud, models, schemas
-from .database import SessionLocal, engine
+from .database import SessionLocal, engine, init_db, get_session
+from src.routes import router as api_router
 
 # Create the database tables
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(
-    title="Burn After Reading",
-    description="A secure, private way to share self-destructing messages and files.",
-    version="0.2.0"
-)
+# Create the main FastAPI app instance
+root_app = FastAPI(title="Burn After Reading API")
+
+# Mount the API router under the /api prefix
+root_app.mount("/api", api_router)
+
+# Define a health check endpoint at the root level for the entire service
+@root_app.get("/health", status_code=status.HTTP_200_OK, tags=["Service Health"])
+async def health_check():
+    """
+    Checks if the service is running and can connect to the database.
+    This endpoint is used for health checks by Docker and other services.
+    It's at the root path, so docker-compose healthcheck will be http://.../health
+    """
+    try:
+        # Check database connectivity
+        db = next(get_session())
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: Database connection error - {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection failed",
+        )
+
+# Use root_app as the main application
+app = root_app
 
 # CORS (Cross-Origin Resource Sharing) Configuration
 # Default development origins
@@ -196,13 +223,6 @@ def get_note_legacy(note_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="This is a file note, use POST /note/{note_id}/download")
     
     return {"content": note.content}
-
-@app.get("/health")
-def health_check():
-    """
-    健康检查端点
-    """
-    return {"status": "healthy", "version": "0.2.0"}
 
 @app.post("/cleanup")
 def cleanup_expired(db: Session = Depends(get_db)):
