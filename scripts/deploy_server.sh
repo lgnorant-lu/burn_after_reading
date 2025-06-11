@@ -57,10 +57,30 @@ log_info "部署目录: $APP_DIR"
 read -p "确认以上信息并继续? (y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 # 2. 安装依赖软件
-log_info "检查并安装依赖软件 (Git, Docker, Docker Compose, Nginx, Certbot)..."
-apt update
-apt install -y git curl sudo
-apt install -y docker.io docker-compose nginx certbot python3-certbot-nginx
+log_info "检查并安装依赖软件 (Git, Docker, Nginx, Certbot)..."
+apt-get update
+apt-get install -y git curl sudo nginx certbot python3-certbot-nginx
+
+# --- Docker官方版本安装 ---
+log_info "正在卸载任何可能存在的旧Docker版本..."
+apt-get purge -y docker.io docker-compose containerd runc || true # 使用|| true以忽略未安装时的错误
+apt-get autoremove -y --purge
+
+log_info "正在设置Docker官方软件源..."
+apt-get install -y ca-certificates
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update
+
+log_info "正在安装Docker CE (社区版)..."
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+# --- Docker安装完成 ---
 
 # 3. 拉取或更新项目代码
 log_info "从GitHub拉取项目代码..."
@@ -192,7 +212,7 @@ fi
 log_info "启动应用容器..."
 # 确保我们位于正确的目录
 cd "$APP_DIR"
-docker-compose --env-file .env.prod up --build -d
+docker compose --env-file .env.prod up --build -d
 
 # --- 部署完成 ---
 log_info "🎉 部署完成! 🎉"
