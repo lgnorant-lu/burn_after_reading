@@ -48,4 +48,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 
 # Command to run the application
 # Use environment variables for host and port configuration
-CMD ["sh", "-c", "uvicorn src.main:app --host ${HOST} --port ${PORT}"] 
+CMD ["sh", "-c", "uvicorn src.main:app --host ${HOST} --port ${PORT} --root-path /api"] 

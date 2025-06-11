@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     environment:
       - DATABASE_URL=sqlite:///app/data/burn_after_reading.db
-      - CORS_ORIGINS=http://localhost:3001,http://127.0.0.1:3001
+      - CORS_ORIGINS=https://${DOMAIN:-localhost}
       - HOST=0.0.0.0
       - PORT=8001
     volumes:
@@ -32,11 +32,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=http://localhost:8001
+        - VITE_API_BASE_URL=/api
     container_name: burn-frontend
     restart: unless-stopped
     environment:
-      - VITE_API_BASE_URL=http://localhost:8001
+      - VITE_API_BASE_URL=/api
     ports:
       - "3001:3000"
     networks:
