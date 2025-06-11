@@ -11,7 +11,7 @@ from sqlalchemy.sql import text
 import logging
 
 from . import crud, models, schemas
-from .database import SessionLocal, engine, init_db, get_session
+from .database import SessionLocal, engine
 
 # Configure a basic logger
 logging.basicConfig(level=logging.INFO)
@@ -70,7 +70,7 @@ def get_db():
     finally:
         db.close()
 
-@app.post("/create", response_model=schemas.NoteResponse)
+@app.post("/create")
 def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     """
     创建文本笔记
@@ -80,17 +80,20 @@ def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     
     db_note = crud.create_text_note(db, note)
     
-    # 构建响应，不包含密码哈希
-    return schemas.NoteResponse(
-        id=db_note.id,
-        content=db_note.content,
-        has_password=bool(db_note.password_hash),
-        expiration_type=db_note.expiration_type,
-        expires_at=db_note.expires_at,
-        created_at=db_note.created_at
-    )
+    # Return a plain dictionary to bypass Pydantic validation issues
+    return {
+        "id": db_note.id,
+        "content": db_note.content,
+        "has_password": bool(db_note.password_hash),
+        "expiration_type": db_note.expiration_type,
+        "expires_at": db_note.expires_at,
+        "created_at": db_note.created_at,
+        "filename": None,
+        "content_type": None,
+        "file_size": None
+    }
 
-@app.post("/upload", response_model=schemas.NoteResponse)
+@app.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
     password: Optional[str] = Form(None),
@@ -100,35 +103,37 @@ async def upload_file(
     """
     上传文件笔记 (最大5MB)
     """
-    # 读取文件内容
     file_data = await file.read()
     
-    # 创建文件笔记请求对象
-    file_note = schemas.FileNoteCreate(
+    file_note_create = schemas.FileNoteCreate(
         password=password,
         expiration_type=expiration_type
     )
     
+    filename_str = file.filename if file.filename is not None else "file"
+
     db_note = crud.create_file_note(
         db=db,
         file_data=file_data,
-        filename=file.filename,
+        filename=filename_str,
         content_type=file.content_type or "application/octet-stream",
-        file_note=file_note
+        file_note=file_note_create
     )
     
-    return schemas.NoteResponse(
-        id=db_note.id,
-        filename=db_note.filename,
-        content_type=db_note.content_type,
-        file_size=db_note.file_size,
-        has_password=bool(db_note.password_hash),
-        expiration_type=db_note.expiration_type,
-        expires_at=db_note.expires_at,
-        created_at=db_note.created_at
-    )
+    # Return a plain dictionary
+    return {
+        "id": db_note.id,
+        "filename": db_note.filename,
+        "content_type": db_note.content_type,
+        "file_size": str(db_note.file_size),
+        "has_password": bool(db_note.password_hash),
+        "expiration_type": db_note.expiration_type,
+        "expires_at": db_note.expires_at,
+        "created_at": db_note.created_at,
+        "content": None
+    }
 
-@app.get("/note/{note_id}/info", response_model=schemas.NoteResponse)
+@app.get("/note/{note_id}/info")
 def get_note_info(note_id: uuid.UUID, db: Session = Depends(get_db)):
     """
     获取笔记信息（不删除，用于前端确认是否需要密码）
@@ -137,17 +142,18 @@ def get_note_info(note_id: uuid.UUID, db: Session = Depends(get_db)):
     if not note:
         raise HTTPException(status_code=404, detail="Note not found or expired")
     
-    return schemas.NoteResponse(
-        id=note.id,
-        content=note.content if not note.file_data else None,
-        filename=note.filename,
-        content_type=note.content_type,
-        file_size=note.file_size,
-        has_password=bool(note.password_hash),
-        expiration_type=note.expiration_type,
-        expires_at=note.expires_at,
-        created_at=note.created_at
-    )
+    # Return a plain dictionary
+    return {
+        "id": note.id,
+        "content": note.content if not note.file_data else None,
+        "filename": note.filename,
+        "content_type": note.content_type,
+        "file_size": str(note.file_size) if note.file_size is not None else None,
+        "has_password": bool(note.password_hash),
+        "expiration_type": note.expiration_type,
+        "expires_at": note.expires_at,
+        "created_at": note.created_at
+    }
 
 @app.post("/note/{note_id}")
 def access_note(note_id: uuid.UUID, note_access: schemas.NoteAccess, db: Session = Depends(get_db)):
@@ -223,9 +229,12 @@ async def health_check():
     """
     try:
         # Check database connectivity
-        db = next(get_session())
-        db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+            return {"status": "ok", "database": "connected"}
+        finally:
+            db.close()
     except Exception as e:
         logger.error(f"Health check failed: Database connection error - {e}")
         raise HTTPException(
