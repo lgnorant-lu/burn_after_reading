@@ -97,17 +97,26 @@ def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
 async def upload_file(
     file: UploadFile = File(...),
     password: Optional[str] = Form(None),
-    expiration_type: models.ExpirationType = Form(models.ExpirationType.READ_ONCE),
+    expiration_type: str = Form("read_once"),  # Receive as a raw string
     db: Session = Depends(get_db)
 ):
     """
     上传文件笔记 (最大5MB)
     """
+    # Manually validate and convert the string to the Enum
+    try:
+        expiration_enum = models.ExpirationType(expiration_type)
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid expiration type '{expiration_type}'. Valid options are: {[e.value for e in models.ExpirationType]}"
+        )
+
     file_data = await file.read()
     
     file_note_create = schemas.FileNoteCreate(
         password=password,
-        expiration_type=expiration_type
+        expiration_type=expiration_enum  # Use the validated enum
     )
     
     filename_str = file.filename if file.filename is not None else "file"
