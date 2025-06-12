@@ -1,37 +1,31 @@
 import uuid
-import enum
-from sqlalchemy import Column, String, DateTime, LargeBinary, Text, Enum
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
+import datetime
+from sqlalchemy import Column, String, DateTime, Text, LargeBinary, Boolean, Enum as SQLAlchemyEnum
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional
 
 from .database import Base
+import enum
 
-class ExpirationType(enum.Enum):
-    READ_ONCE = "read_once"  # 默认：阅读后立即删除
-    HOURS_1 = "hours_1"      # 1小时后删除
-    HOURS_24 = "hours_24"    # 24小时后删除
-    DAYS_7 = "days_7"        # 7天后删除
+class ExpirationType(str, enum.Enum):
+    READ_ONCE = "read_once"
+    ONE_HOUR = "one_hour"
+    ONE_DAY = "one_day"
+    ONE_WEEK = "one_week"
 
 class Note(Base):
     __tablename__ = "notes"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    expiration_type: Mapped[ExpirationType] = mapped_column(SQLAlchemyEnum(ExpirationType), nullable=False)
+    expires_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, nullable=True)
     
-    # 内容字段 - 文本内容或文件名
-    content = Column(Text, nullable=True)  # 文本笔记的内容
-    
-    # 密码保护
-    password_hash = Column(String(255), nullable=True)  # bcrypt哈希
-    
-    # 过期控制
-    expiration_type = Column(Enum(ExpirationType), nullable=False, default=ExpirationType.READ_ONCE)
-    expires_at = Column(DateTime(timezone=True), nullable=True)  # 具体过期时间
-    
-    # 文件支持
-    filename = Column(String(255), nullable=True)  # 原始文件名
-    file_data = Column(LargeBinary, nullable=True)  # 文件内容 (BLOB)
-    content_type = Column(String(100), nullable=True)  # MIME类型
-    file_size = Column(String(20), nullable=True)  # 文件大小（字节）
-    
-    # 时间戳
-    created_at = Column(DateTime(timezone=True), server_default=func.now()) 
+    # For file storage
+    filename: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    file_data: Mapped[Optional[bytes]] = mapped_column(LargeBinary, nullable=True)
+    content_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    file_size: Mapped[Optional[int]] = mapped_column(String, nullable=True)

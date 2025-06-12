@@ -70,7 +70,7 @@ def get_db():
     finally:
         db.close()
 
-@app.post("/create")
+@app.post("/create", response_model=schemas.NoteResponse)
 def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     """
     创建文本笔记
@@ -79,21 +79,9 @@ def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Content is required for text notes")
     
     db_note = crud.create_text_note(db, note)
-    
-    # Return a plain dictionary to bypass Pydantic validation issues
-    return {
-        "id": db_note.id,
-        "content": db_note.content,
-        "has_password": bool(db_note.password_hash),
-        "expiration_type": db_note.expiration_type,
-        "expires_at": db_note.expires_at,
-        "created_at": db_note.created_at,
-        "filename": None,
-        "content_type": None,
-        "file_size": None
-    }
+    return db_note
 
-@app.post("/upload")
+@app.post("/upload", response_model=schemas.NoteResponse)
 async def upload_file(
     file: UploadFile = File(...),
     password: Optional[str] = Form(None),
@@ -120,20 +108,9 @@ async def upload_file(
         file_note=file_note_create
     )
     
-    # Return a plain dictionary
-    return {
-        "id": db_note.id,
-        "filename": db_note.filename,
-        "content_type": db_note.content_type,
-        "file_size": str(db_note.file_size),
-        "has_password": bool(db_note.password_hash),
-        "expiration_type": db_note.expiration_type,
-        "expires_at": db_note.expires_at,
-        "created_at": db_note.created_at,
-        "content": None
-    }
+    return db_note
 
-@app.get("/note/{note_id}/info")
+@app.get("/note/{note_id}/info", response_model=schemas.NoteResponse)
 def get_note_info(note_id: uuid.UUID, db: Session = Depends(get_db)):
     """
     获取笔记信息（不删除，用于前端确认是否需要密码）
@@ -141,19 +118,7 @@ def get_note_info(note_id: uuid.UUID, db: Session = Depends(get_db)):
     note = crud.get_note_info(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found or expired")
-    
-    # Return a plain dictionary
-    return {
-        "id": note.id,
-        "content": note.content if not note.file_data else None,
-        "filename": note.filename,
-        "content_type": note.content_type,
-        "file_size": str(note.file_size) if note.file_size is not None else None,
-        "has_password": bool(note.password_hash),
-        "expiration_type": note.expiration_type,
-        "expires_at": note.expires_at,
-        "created_at": note.created_at
-    }
+    return note
 
 @app.post("/note/{note_id}")
 def access_note(note_id: uuid.UUID, note_access: schemas.NoteAccess, db: Session = Depends(get_db)):
