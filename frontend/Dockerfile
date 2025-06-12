@@ -16,6 +16,11 @@ RUN npm ci
 # Copy the rest of the frontend source code.
 COPY . .
 
+# Declare the build argument and set it as an environment variable
+# so it's available to the 'npm run build' command.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Build the application for production.
 RUN npm run build
 
@@ -33,8 +38,8 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copy our custom Nginx configuration.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80 to the outside world.
-EXPOSE 80
+# Expose port 3000 to align with the nginx.conf.
+EXPOSE 3000
 
 # The command to start the Nginx server in the foreground.
 CMD ["nginx", "-g", "daemon off;"]
