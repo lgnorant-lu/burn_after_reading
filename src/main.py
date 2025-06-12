@@ -133,6 +133,10 @@ def get_note_info(note_id: uuid.UUID, db: Session = Depends(get_db)):
     note = crud.get_note_info(db, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found or expired")
+    
+    # Manually set the has_password attribute before returning.
+    note.has_password = note.password_hash is not None
+    
     return note
 
 @api_router.post("/note/{note_id}")
