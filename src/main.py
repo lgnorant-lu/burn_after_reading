@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, APIRouter
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import uuid
@@ -26,6 +26,9 @@ app = FastAPI(
     description="A secure, private way to share self-destructing messages and files.",
     version="0.2.0"
 )
+
+# Create an API router with the /api prefix
+api_router = APIRouter(prefix="/api")
 
 # CORS (Cross-Origin Resource Sharing) Configuration
 # Default development origins
@@ -70,7 +73,7 @@ def get_db():
     finally:
         db.close()
 
-@app.post("/create", response_model=schemas.NoteResponse)
+@api_router.post("/create", response_model=schemas.NoteResponse)
 def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     """
     创建文本笔记
@@ -81,7 +84,7 @@ def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     db_note = crud.create_text_note(db, note)
     return db_note
 
-@app.post("/upload", response_model=schemas.NoteResponse)
+@api_router.post("/upload", response_model=schemas.NoteResponse)
 async def upload_file(
     file: UploadFile = File(...),
     password: Optional[str] = Form(None),
@@ -110,7 +113,7 @@ async def upload_file(
     
     return db_note
 
-@app.get("/note/{note_id}/info", response_model=schemas.NoteResponse)
+@api_router.get("/note/{note_id}/info", response_model=schemas.NoteResponse)
 def get_note_info(note_id: uuid.UUID, db: Session = Depends(get_db)):
     """
     获取笔记信息（不删除，用于前端确认是否需要密码）
@@ -120,7 +123,7 @@ def get_note_info(note_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Note not found or expired")
     return note
 
-@app.post("/note/{note_id}")
+@api_router.post("/note/{note_id}")
 def access_note(note_id: uuid.UUID, note_access: schemas.NoteAccess, db: Session = Depends(get_db)):
     """
     访问文本笔记内容（带密码验证，访问后删除）
@@ -134,7 +137,7 @@ def access_note(note_id: uuid.UUID, note_access: schemas.NoteAccess, db: Session
     
     return {"content": note.content, "expiration_type": note.expiration_type.value}
 
-@app.post("/note/{note_id}/download")
+@api_router.post("/note/{note_id}/download")
 def download_file(note_id: uuid.UUID, note_access: schemas.NoteAccess, db: Session = Depends(get_db)):
     """
     下载文件笔记（带密码验证，下载后删除）
@@ -159,7 +162,7 @@ def download_file(note_id: uuid.UUID, note_access: schemas.NoteAccess, db: Sessi
     )
 
 # 保持向后兼容的旧API端点
-@app.get("/note/{note_id}")
+@api_router.get("/note/{note_id}")
 def get_note_legacy(note_id: uuid.UUID, db: Session = Depends(get_db)):
     """
     旧版本API兼容性端点（无密码保护）
@@ -176,7 +179,7 @@ def get_note_legacy(note_id: uuid.UUID, db: Session = Depends(get_db)):
     
     return {"content": note.content}
 
-@app.post("/cleanup")
+@api_router.post("/cleanup")
 def cleanup_expired(db: Session = Depends(get_db)):
     """
     手动清理过期笔记（管理员端点）
@@ -205,4 +208,7 @@ async def health_check():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Database connection failed",
-        ) 
+        )
+
+# Include the API router in the main app
+app.include_router(api_router) 

@@ -117,9 +117,10 @@ server {
     # File upload size limit (should match CLIENT_MAX_BODY_SIZE in .env.prod)
     client_max_body_size 5M;
 
-    # Backend API endpoints
-    location ~ ^/(create|upload|note|cleanup|health)$ {
-        proxy_pass http://127.0.0.1:8001;
+    # Backend API endpoints are now under /api/
+    location /api/ {
+        # The trailing slash is important here to correctly pass the path
+        proxy_pass http://127.0.0.1:8001/api/;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -141,7 +142,12 @@ server {
 EOF
 
     log_info "再次测试并重载Nginx配置以启用HTTPS..."
-    $NGINX_CMD -t && sudo systemctl reload nginx
+    # Use the correct command for Baota panel to restart/reload
+    if [ -d "/www/server/panel/vhost/nginx" ]; then
+        /etc/init.d/nginx reload
+    else
+        sudo systemctl reload nginx
+    fi
 }
 
 # --- Script Body ---
@@ -232,6 +238,12 @@ if command -v ufw &> /dev/null; then
     ufw allow 22/tcp  # SSH
     ufw allow 80/tcp  # HTTP
     ufw allow 443/tcp # HTTPS
+    # Ensure Baota's firewall is also configured if present
+    if [ -f "/usr/bin/bt" ]; then
+        log_info "宝塔面板环境，尝试使用 'bt' 命令开放端口..."
+        bt 5 # Allow Port 80
+        bt 6 # Allow Port 443
+    fi
     ufw --force enable
 else
     log_warn "UFW未安装，请手动配置防火墙以开放端口 22, 80, 443。"
@@ -243,6 +255,10 @@ log_info "启动应用容器..."
 cd "$APP_DIR"
 # 使用新的docker compose命令 (带空格), 并将DOMAIN变量传递进去
 export DOMAIN=$DOMAIN && docker compose --env-file .env.prod up --build -d
+
+# 8. 清理旧的、可能冲突的docker镜像
+log_info "正在清理旧的、未使用的Docker镜像以释放空间..."
+docker image prune -af
 
 # --- 部署完成 ---
 log_info "🎉 部署完成! 🎉"
