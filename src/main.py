@@ -81,7 +81,16 @@ def create_text_note(note: schemas.NoteCreate, db: Session = Depends(get_db)):
     if not note.content:
         raise HTTPException(status_code=400, detail="Content is required for text notes")
     
-    db_note = crud.create_text_note(db, note)
+    db_note = crud.create_text_note(db, note=note)
+
+    # Manually set the has_password attribute before returning.
+    # This is required by the NoteResponse schema.
+    db_note.has_password = db_note.password_hash is not None
+
+    # Construct the full URL for the note
+    # This should be handled by the frontend, but we provide it for convenience.
+    # In a real app, the base URL should come from a config file.
+
     return db_note
 
 @api_router.post("/upload", response_model=schemas.NoteResponse)
@@ -110,7 +119,10 @@ async def upload_file(
         content_type=file.content_type or "application/octet-stream",
         file_note=file_note_create
     )
-    
+
+    # Manually set the has_password attribute before returning.
+    db_note.has_password = db_note.password_hash is not None
+
     return db_note
 
 @api_router.get("/note/{note_id}/info", response_model=schemas.NoteResponse)
