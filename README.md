@@ -20,6 +20,31 @@
 - **现代化前端**: 使用Vue.js和Tailwind CSS构建的响应式、用户友好的界面。
 - **容器化**: 已准备好通过Docker进行部署。
 
+## 🚀 部署
+
+本项目推荐使用 Docker 进行生产环境部署。我们提供了一个强大的一键部署脚本，能够自动化处理绝大部分部署任务，特别针对 **Debian 12 + 宝塔面板** 环境进行了深度优化。
+
+关于完整的、包含架构图、步骤详解和"避坑指南"的部署文档，请务必查阅：
+
+**[➡️ 点击查看详细的生产环境部署指南](./DEPLOYMENT.md)**
+
+### 快速开始
+
+1.  克隆仓库到服务器的 `/opt` 目录:
+    ```bash
+    git clone https://github.com/lgnorant-lu/burn_after_reading.git /opt/burn_after_reading
+    cd /opt/burn_after_reading
+    ```
+2.  赋予部署脚本执行权限:
+    ```bash
+    chmod +x scripts/deploy_server.sh
+    ```
+3.  以 root 权限执行脚本 (将 `your-domain.com` 替换为你的域名):
+    ```bash
+    sudo bash scripts/deploy_server.sh your-domain.com
+    ```
+脚本将自动处理依赖安装、Docker环境配置、Nginx反向代理、SSL证书申请及应用容器的构建与启动。
+
 ## 🛠️ 技术栈
 
 - **后端**: Python, FastAPI, SQLAlchemy

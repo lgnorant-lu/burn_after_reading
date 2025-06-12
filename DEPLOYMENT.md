@@ -1,369 +1,174 @@
-# Docker 部署指南 - 阅后即焚
+# Burn After Reading - 生产环境部署指南 (v2.0)
 
-**项目主页:** [`README.md`](./README.md)  
-**项目仓库地址:** [https://github.com/lgnorant-lu/burn_after_reading](https://github.com/lgnorant-lu/burn_after_reading)
+本文档提供了在 **Debian 12** 服务器上，特别是集成了 **宝塔面板 (BT Panel)** 的环境中，从零开始部署 "Burn After Reading" 应用的详细步骤和关键注意事项。
 
 ---
 
-## 1. 简介
-
-本指南为 "阅后即焚" 应用提供了详细的Docker部署说明。Docker是生产环境推荐的部署方式，因为它将应用程序及其所有依赖项封装到一个标准化的软件开发单元中。
-
-## 2. 先决条件
-
-在开始之前，请确保您的系统中已安装以下软件：
-- [Docker](https://docs.docker.com/get-docker/) (版本 20.10.0 或更高)
-- [Docker Compose](https://docs.docker.com/compose/install/) (版本 1.29.0 或更高，通常随Docker Desktop提供)
-- [Git](https://git-scm.com/downloads/) (用于克隆项目)
-
-## 3. 架构概览
-
-部署架构包含三个主要组件：
-1.  **Nginx (反向代理)**: 作为前端静态文件和后端API的入口点，处理所有传入的HTTP/HTTPS请求，并负责提供SSL终止。
-2.  **FastAPI (后端服务)**: 运行在Uvicorn服务器上的Python应用，提供核心的API逻辑。
-3.  **Vue.js (前端应用)**: 一个编译后的单页应用(SPA)，由Nginx作为静态文件提供服务。
-
-## 4. 部署步骤
-
-### 步骤 1: 获取源代码
-```bash
-git clone https://github.com/lgnorant-lu/burn_after_reading.git
-cd burn_after_reading
-```
-
-### 步骤 2: 配置环境变量
-
-在项目根目录创建一个 `.env` 文件。这个文件将用于存储敏感信息和环境特定的配置。
-
-```env
-# .env
-
-# 安全密钥，用于内部加密操作。请使用一个长且随机的字符串。
-# 可以使用命令 `openssl rand -hex 32` 生成
-SECRET_KEY=在此处输入您生成的安全密钥
-
-# 数据库URL
-# 默认使用SQLite。对于生产环境，推荐使用PostgreSQL。
-# SQLALCHEMY_DATABASE_URL="sqlite:///./sql_app.db"
-SQLALCHEMY_DATABASE_URL="postgresql://user:password@host:port/database"
-
-# CORS (跨域资源共享) 设置
-# 如果您的前端和后端部署在不同的域名下，请配置允许的前端源。
-# 使用逗号分隔多个源，例如 "http://localhost:5173,https://your.frontend.domain"
-CORS_ORIGINS="http://localhost:5173,http://localhost:80"
-
-# 应用版本
-APP_VERSION="1.0.0"
-```
-
-### 步骤 3: 构建并运行Docker容器
-
-我们使用 `docker-compose.yml` 文件来编排服务的构建和运行。
-
-```bash
-# 构建并以分离模式（在后台运行）启动所有服务
-docker-compose up --build -d
-```
-
-此命令将完成以下操作：
-- 拉取或构建 `nginx`, `backend`, `frontend` 服务的镜像。
-- 创建并启动容器。
-- 建立服务间的网络连接。
-
-### 步骤 4: 验证部署
-
-- **后端健康检查**:
-  ```bash
-  curl http://localhost/api/health
-  # 预期输出: {"status":"healthy","version":"1.0.0"}
-  ```
-- **访问前端**:
-  在您的浏览器中打开 `http://localhost`。您应该能看到阅后即焚应用的主页。
-
-## 5. Docker Compose 服务详解
-
-文件: `docker-compose.yml`
-
-- **`backend` 服务**:
-  - **构建上下文**: 项目根目录。
-  - **Dockerfile**: `backend.Dockerfile`
-  - **环境变量**: 从 `.env` 文件加载。
-  - **端口**: 不直接暴露给主机，通过Nginx进行通信。
-
-- **`frontend` 服务**:
-  - **构建上下文**: `frontend` 目录。
-  - **Dockerfile**: `frontend.Dockerfile`
-  - **阶段**: 多阶段构建，首先安装依赖并构建静态文件，然后将产物复制到一个轻量级的 `nginx` 镜像中。
-
-- **`nginx` 服务**:
-  - **镜像**: 使用官方 `nginx:stable-alpine` 镜像。
-  - **端口映射**: 将主机的80端口映射到容器的80端口。
-  - **卷挂载**:
-    - `nginx.conf`: Nginx的主配置文件。
-    - `sites-enabled/`: 虚拟主机配置文件。
-    - `logs/`: 用于存储Nginx的访问和错误日志。
-  - **依赖**: 依赖 `backend` 和 `frontend` 服务，确保它们先于Nginx启动。
-
-## 6. 日志与监控
-
-- **查看实时日志**:
-  ```bash
-  # 查看所有服务的日志
-  docker-compose logs -f
-
-  # 查看特定服务的日志 (例如 backend)
-  docker-compose logs -f backend
-  ```
-- **日志文件**: Nginx的日志被挂载到项目根目录下的 `logs/` 文件夹中，方便持久化存储和分析。
-
-## 7. 停止与清理
-
-- **停止并移除容器**:
-  ```bash
-  docker-compose down
-  ```
-- **移除镜像 (可选)**:
-  如果想彻底清理，可以移除 `docker-compose up` 构建的镜像。
-  ```bash
-  docker-compose down --rmi all
-  ```
-
-## 8. 故障排查
-
-- **容器无法启动**:
-  - 检查 `docker-compose logs <service_name>` 查看具体错误。
-  - 确认 `.env` 文件配置正确，特别是 `SECRET_KEY` 和 `SQLALCHEMY_DATABASE_URL`。
-- **Nginx `502 Bad Gateway` 错误**:
-  - 这通常意味着Nginx无法连接到后端服务。
-  - 检查后端服务的日志 (`docker-compose logs backend`)，确认它是否已成功启动且没有错误。
-- **前端资源加载失败 (404)**:
-  - 确认 `nginx.conf` 中的路径配置是否正确。
-  - 检查前端容器的构建日志，确保静态文件已成功生成并复制到正确位置。
-
-## 9. 功能测试
-
-### 自动化测试脚本
-
-项目包含了完整的部署测试脚本，验证所有核心功能：
-
-**Windows PowerShell:**
-```powershell
-.\test_docker_deployment.ps1
-```
-
-### 手动功能测试
-
-#### 1. 文本消息测试
-```bash
-# 创建阅后即焚消息
-curl -X POST "http://localhost:8001/create" \
-  -H "Content-Type: application/json" \
-  -d '{"expiration_type":"read_once","content":"测试消息"}'
-
-# 返回示例: {"id":"abc123","expires_at":null}
-
-# 访问消息 (注意：访问后会立即删除)
-curl "http://localhost:8001/note/abc123"
-```
-
-#### 2. 文件上传测试
-```bash
-# 上传文件
-curl -X POST "http://localhost:8001/upload" \
-  -F "file=@test.txt" \
-  -F "expiration_type=read_once"
-
-# 下载文件 (注意：下载后会立即删除)
-curl "http://localhost:8001/note/file_id" --output downloaded_file.txt
-```
-
-## 10. 配置说明
-
-### 环境变量
-
-#### 后端环境变量
-```bash
-# 数据库配置
-DATABASE_URL=sqlite:///app/data/burn_after_reading.db
-
-# 服务器配置
-HOST=0.0.0.0
-PORT=8001
-
-# CORS配置
-CORS_ORIGINS=http://localhost:3001,http://127.0.0.1:3001
-
-# 文件上传配置 (在应用代码中硬编码)
-# 最大文件大小: 5MB
-# 上传目录: 存储在数据库中，不使用文件系统
-```
-
-#### 前端环境变量
-```bash
-# API配置 (Docker构建时设置)
-VITE_API_BASE_URL=http://localhost:8001
-
-# 注意：前端使用Vite构建，开发环境端口为5173，生产环境通过Docker暴露为3001
-```
-
-### 实际的Docker Compose配置
-
-项目中的`docker-compose.yml`配置：
-
-```yaml
-version: '3.8'
-
-services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: burn-backend
-    restart: unless-stopped
-    environment:
-      - DATABASE_URL=sqlite:///app/data/burn_after_reading.db
-      - CORS_ORIGINS=http://localhost:3001,http://127.0.0.1:3001
-      - HOST=0.0.0.0
-      - PORT=8001
-    volumes:
-      - ./data:/app/data
-    ports:
-      - "8001:8001"
-    networks:
-      - burn-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=http://localhost:8001
-    container_name: burn-frontend
-    restart: unless-stopped
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8001
-    ports:
-      - "3001:3000"  # 容器内Nginx运行在3000端口，映射到主机3001端口
-    networks:
-      - burn-network
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-
-networks:
-  burn-network:
-    driver: bridge
-    name: burn_after_reading_network
-
-volumes:
-  burn_data:
-    driver: local
-```
-
-## 11. 安全考虑
-
-### 生产环境部署建议
-
-1. **HTTPS配置**: 在生产环境中务必使用HTTPS
-2. **环境变量**: 敏感配置通过环境变量管理，不要硬编码
-3. **文件大小限制**: 当前硬编码为5MB，在上传端点中验证
-4. **访问日志**: 启用访问日志监控
-5. **备份策略**: 虽然是"阅后即焚"，但建议定期备份配置
-
-### 数据安全
-
-- 所有note在访问后会立即删除
-- 上传的文件存储在数据库中（不使用文件系统）
-- 数据库连接使用参数化查询防止SQL注入
-- 文件上传包含类型和大小验证
-
-## 12. 性能优化
-
-### 生产环境优化建议
-
-1. **前端优化**:
-   - 启用Nginx gzip压缩 (已在nginx.conf中配置)
-   - 配置静态资源缓存
-   - 使用CDN加速
-
-2. **后端优化**:
-   - 配置适当的worker数量
-   - 启用数据库连接池
-   - 配置API响应缓存
-
-3. **系统优化**:
-   - 配置反向代理(Nginx/Apache)
-   - 设置负载均衡
-   - 监控系统资源使用
-
-## 13. API文档
-
-详细的API文档可通过以下方式访问：
-- **Swagger UI**: http://localhost:8001/docs
-- **ReDoc**: http://localhost:8001/redoc
-
-### 主要API端点
-
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| `/health` | GET | 健康检查 |
-| `/create` | POST | 创建文本消息 |
-| `/upload` | POST | 上传文件 |
-| `/note/{note_id}` | GET | 获取并删除note (兼容旧版本，无密码) |
-| `/note/{note_id}/info` | GET | 获取note信息(不删除) |
-| `/note/{note_id}` | POST | 访问文本note(带密码验证，访问后删除) |
-| `/note/{note_id}/download` | POST | 下载文件note(带密码验证，下载后删除) |
-| `/cleanup` | POST | 清理过期note |
-
-## 14. 维护和更新
-
-### 应用更新
-```bash
-# 拉取最新代码
-git pull origin main
-
-# Docker环境更新
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
-
-# 本地环境更新
-# 后端
-uv pip install --system .
-
-# 前端
-cd frontend
-npm install
-npm run build
-```
-
-### 数据清理
-```bash
-# 手动清理过期notes
-curl -X POST http://localhost:8001/cleanup
-
-# 数据库维护
-sqlite3 burn_after_reading.db "VACUUM;"
-```
-
-## 15. 支持与贡献
-
-- **问题反馈**: 请在GitHub Issues中提交
-- **功能建议**: 欢迎提交Feature Request
-- **代码贡献**: 请遵循项目的代码风格和提交规范
+## 目录
+1.  [核心架构](#1-核心架构)
+2.  [环境要求](#2-环境要求)
+3.  [一键部署流程](#3-一键部署流程)
+4.  [部署后验证](#4-部署后验证)
+5.  [关键"陷阱"与排错详解](#5-关键陷阱与排错详解)
+    -   [5.1 陷阱一：系统 Docker vs 官方 Docker CE](#51-陷阱一系统-docker-vs-官方-docker-ce)
+    -   [5.2 陷阱二：宝塔面板的"隐形" Nginx](#52-陷阱二宝塔面板的隐形-nginx)
+    -   [5.3 陷阱三：前端构建环境变量注入失败](#53-陷阱三前端构建环境变量注入失败)
+    -   [5.4 陷阱四：API 路由与健康检查的一致性](#54-陷阱四api-路由与健康检查的一致性)
+    -   [5.5 陷阱五：后端响应模型验证失败 (ResponseValidationError)](#55-陷阱五后端响应模型验证失败-responsevalidationerror)
+6.  [手动维护命令](#6-手动维护命令)
 
 ---
 
-**注意**: 本应用实现了真正的"阅后即焚"功能，所有note在访问后会立即删除，请用户在使用时注意数据的重要性。 
+## 1. 核心架构
+
+本项目采用基于 Docker Compose 的容器化架构，由三个核心服务和一个外部反向代理组成：
+
+-   **`burn-backend`**: FastAPI 后端服务，处理所有 API 请求、数据库交互和文件存储。
+-   **`burn-frontend`**: 基于 Nginx 的前端服务，负责提供编译后的 Vue.js 静态文件。
+-   **`burn-db`**: (如果使用) PostgreSQL 数据库服务。当前部署脚本使用 SQLite，此服务不启用。
+-   **外部 Nginx (宝塔面板)**: 作为流量入口，负责处理 SSL/TLS 加密，并作为反向代理，根据 URL 路径将请求分发给前端或后端容器。
+
+**流量走向图:**
+```mermaid
+graph TD
+    subgraph "用户浏览器"
+        A[用户访问 https://your-domain.com]
+    end
+
+    subgraph "服务器 (宝塔面板 Nginx)"
+        B(外部 Nginx:443)
+    end
+
+    subgraph "Docker 网络"
+        C[burn-frontend:3001]
+        D[burn-backend:8001]
+    end
+
+    A --> B;
+    B -- "请求 /api/*" --> D;
+    B -- "其他所有请求 (/, /create, /note/*)" --> C;
+```
+
+---
+
+## 2. 环境要求
+
+-   **操作系统**: Debian 12 (Bookworm)
+-   **服务器面板**: 已安装宝塔面板 (BT Panel) - 脚本已针对此环境进行适配。
+-   **域名**: 一个已解析到您服务器 IP 的域名。
+-   **依赖**: `git`, `curl`, `sudo` (脚本会自动尝试安装)。
+-   **Docker**: 脚本会自动卸载系统自带的 `docker.io` 并安装官方的 `docker-ce`。
+
+---
+
+## 3. 一键部署流程
+
+项目提供了一个强大的自动化部署脚本 `scripts/deploy_server.sh`，它能处理几乎所有的部署任务。
+
+1.  **克隆项目**:
+    ```bash
+    sudo apt update && sudo apt install -y git
+    git clone https://github.com/lgnorant-lu/burn_after_reading.git /opt/burn_after_reading
+    cd /opt/burn_after_reading
+    ```
+
+2.  **切换到部署分支**: (如果需要)
+    ```bash
+    git checkout feature/docker-deployment
+    ```
+
+3.  **赋予脚本执行权限**:
+    ```bash
+    chmod +x scripts/deploy_server.sh
+    ```
+
+4.  **执行部署脚本** (请使用 `sudo` 或以 `root` 用户身份运行):
+    ```bash
+    sudo bash scripts/deploy_server.sh your-domain.com
+    ```
+    将 `your-domain.com` 替换为您的真实域名。脚本会自动完成以下所有工作：
+    -   检查并安装所有必要的依赖。
+    -   正确地安装和配置 Docker 环境。
+    -   从 GitHub 拉取最新的代码。
+    -   创建生产环境配置文件 `.env.prod`。
+    -   **自动适配宝塔环境**，在正确的位置生成 Nginx 配置文件。
+    -   使用 Certbot 申请 SSL 证书并配置 HTTPS。
+    -   使用 Docker Compose 构建并启动所有应用容器。
+    -   清理旧的 Docker 镜像。
+
+---
+
+## 4. 部署后验证
+
+脚本执行成功后，等待约一分钟让服务完全启动，然后：
+
+1.  打开浏览器访问 `https://your-domain.com`。
+2.  **功能烟雾测试**:
+    -   尝试创建一条文本便签。
+    -   访问生成的链接，确认可以查看并销毁。
+    -   尝试上传一个小文件。
+    -   访问生成的链接，确认可以下载。
+3.  **查看实时日志**:
+    ```bash
+    cd /opt/burn_after_reading
+    sudo docker-compose logs -f
+    ```
+
+---
+
+## 5. 关键"陷阱"与排错详解
+
+在部署过程中，我们遇到了一系列复杂的问题。这里详细记录下来，便于未来排错。
+
+### 5.1 陷阱一：系统 Docker vs 官方 Docker CE
+
+-   **问题描述**: 在 Debian 系统上使用 `apt install docker.io` 安装的 Docker 版本较旧，且与 AppArmor 配置文件存在兼容性问题，导致 `docker-compose up` 失败。
+-   **解决方案**: `deploy_server.sh` 脚本现在会自动 **卸载** 包括 `docker.io`, `docker-compose`, `containerd` 在内的旧版本，然后添加 Docker **官方软件源**，并安装最新的 `docker-ce`, `docker-ce-cli` 等组件。这从根本上保证了 Docker 环境的稳定和纯净。
+
+### 5.2 陷阱二：宝塔面板的"隐形" Nginx
+
+-   **问题描述**: 宝塔面板会安装并管理自己独立的 Nginx 服务，其路径和启停命令与系统默认的 Nginx (`systemctl start nginx`) **完全不同**。如果在脚本中使用了错误的命令，会导致配置无法加载、服务无法启动、端口冲突等一系列诡异问题。
+-   **宝塔 Nginx 路径**: `/www/server/nginx/`
+-   **宝塔 Nginx 命令**: `/etc/init.d/nginx start|stop|reload|restart`
+-   **解决方案**: `deploy_server.sh` 脚本通过检查 `/www/server/panel` 目录是否存在来 **自动检测宝塔环境**。一旦检测到，脚本会强制使用宝塔的专用路径和命令来配置和重载 Nginx，完美解决了环境不一致的问题。
+
+### 5.3 陷阱三：前端构建环境变量注入失败
+
+-   **问题描述**: 前端应用在创建 API 请求时，直接访问了后端的内网 IP (`http://127.0.0.1:8001`)，导致了致命的 CORS 跨域错误。这是因为前端在构建时，未能获取到正确的 API 路径。
+-   **根本原因**: `frontend/Dockerfile` 中虽然接收了 `VITE_API_BASE_URL` 这个构建参数，但没有使用 `ARG` 和 `ENV` 指令将其声明为容器内的环境变量，导致 `npm run build` 命令无法访问该变量。
+-   **解决方案**: 在 `frontend/Dockerfile` 的 `RUN npm run build` 命令之前，添加了以下两行，确保变量能够被正确注入：
+    ```dockerfile
+    ARG VITE_API_BASE_URL
+    ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+    ```
+
+### 5.4 陷阱四：API 路由与健康检查的一致性
+
+-   **问题描述**: 将所有后端路由统一添加 `/api` 前缀后，忘记了更新 `docker-compose.yml` 中的健康检查 (`healthcheck`) URL，导致后端容器虽然正常启动，但一直处于 `unhealthy` 状态，从而阻止了依赖它的前端容器启动。
+-   **解决方案**: 确保项目中所有涉及到后端 URL 的地方都保持一致。
+    -   **`src/main.py`**: 所有 `@api_router.get` / `@api_router.post` 都在 `/api` 路由下。
+    -   **`scripts/deploy_server.sh`**: Nginx 配置中 `location /api/` 指向后端。
+    -   **`docker-compose.yml`**: 后端的 `healthcheck` 指向 `http://localhost:8001/api/health`。
+    -   **`frontend/Dockerfile`**: 构建参数 `VITE_API_BASE_URL` 设置为 `/api`。
+
+### 5.5 陷阱五：后端响应模型验证失败 (ResponseValidationError)
+
+-   **问题描述**: 成功创建/获取笔记后，后端返回 `500 Internal Server Error`。日志显示 `ResponseValidationError: ... 'type': 'missing', ... 'has_password'`。
+-   **根本原因**: 后端从数据库取出的 `models.Note` 对象与用于生成响应的 Pydantic 模型 `schemas.NoteResponse` 结构不完全匹配。响应模型要求有一个 `has_password` 字段，但数据库模型中没有。
+-   **解决方案**: 采用侵入性最小、最安全的修复方式。不去修改数据库模型（这会涉及复杂的数据库迁移），而是在 **返回数据前动态添加属性**。在 `src/main.py` 的所有相关接口（`create_text_note`, `upload_file`, `get_note_info`）中，在 `return db_note` 之前，都加入了以下逻辑：
+    ```python
+    # Manually set the has_password attribute before returning.
+    note.has_password = note.password_hash is not None
+    ```
+    这巧妙地解决了数据序列化问题，而无需改动底层模型。
+
+---
+
+## 6. 手动维护命令
+
+-   **查看所有容器日志**: `cd /opt/burn_after_reading && sudo docker-compose logs -f`
+-   **只看后端日志**: `sudo docker logs burn-backend`
+-   **只看前端日志**: `sudo docker logs burn-frontend`
+-   **停止所有服务**: `cd /opt/burn_after_reading && sudo docker-compose down`
+-   **重启所有服务**: `cd /opt/burn_after_reading && sudo docker-compose up -d`
+-   **重载宝塔 Nginx 配置**: `sudo /etc/init.d/nginx reload` 

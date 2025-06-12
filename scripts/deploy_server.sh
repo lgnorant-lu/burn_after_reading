@@ -35,22 +35,18 @@ log_error() {
 # Function to configure Nginx robustly
 configure_nginx() {
     log_info "配置 Nginx..."
-
-    # Detect Baota (BT Panel) environment
+    # 检测是否为宝塔面板环境，宝塔的Nginx有其特殊的路径和管理方式
     if [ -d "/www/server/panel/vhost/nginx" ]; then
-        NGINX_CONF_DIR="/www/server/panel/vhost/nginx"
-        NGINX_LOG_DIR="/www/wwwlogs"
-        NGINX_CMD="/www/server/nginx/sbin/nginx"
-        ACME_ROOT_PARENT="/www/wwwroot"
         log_info "检测到宝塔面板环境，使用特定路径。"
+        NGINX_CONF_DIR="/www/server/panel/vhost/nginx"
+        NGINX_CMD="/www/server/nginx/sbin/nginx"
     else
         NGINX_CONF_DIR="/etc/nginx/sites-available"
-        NGINX_LOG_DIR="/var/log/nginx"
-        NGINX_CMD="nginx"
-        ACME_ROOT_PARENT="/var/www"
-        log_info "使用标准Nginx环境路径。"
+        NGINX_CMD="/usr/sbin/nginx"
     fi
-
+    
+    NGINX_CONF_FILE="$NGINX_CONF_DIR/$DOMAIN.conf"
+    
     local nginx_conf_file="$NGINX_CONF_DIR/$DOMAIN.conf"
     local acme_dir="$ACME_ROOT_PARENT/$DOMAIN"
     
@@ -77,7 +73,8 @@ server {
 EOF
 
     log_info "测试并重载Nginx配置..."
-    # Correctly reload Baota or standard Nginx
+    # 再次进行环境判断，使用正确的命令重载Nginx
+    # 这是确保在申请SSL证书前，让letsencrypt能通过HTTP-01质询的关键
     if [ -d "/www/server/panel/vhost/nginx" ]; then
         $NGINX_CMD -t && /etc/init.d/nginx reload
     else
@@ -147,11 +144,11 @@ server {
 EOF
 
     log_info "再次测试并重载Nginx配置以启用HTTPS..."
-    # Use the correct command for Baota panel to restart/reload
+    # 同样，使用与环境匹配的命令进行最终的重载
     if [ -d "/www/server/panel/vhost/nginx" ]; then
-        /etc/init.d/nginx reload
+        $NGINX_CMD -t && /etc/init.d/nginx reload
     else
-        sudo systemctl reload nginx
+        $NGINX_CMD -t && sudo systemctl reload nginx
     fi
 }
 
