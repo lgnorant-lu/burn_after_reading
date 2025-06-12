@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.orm import Session
 import uuid
 from typing import Optional
@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import status
 from sqlalchemy.sql import text
 import logging
+from fastapi.exceptions import RequestValidationError
+import json
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -24,7 +26,8 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Burn After Reading",
     description="A secure, private way to share self-destructing messages and files.",
-    version="0.2.0"
+    version="0.2.0",
+    expose_headers=["Content-Disposition", "Content-Length"],
 )
 
 # Create an API router with the /api prefix
@@ -64,6 +67,17 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition", "Content-Length"],
 )
+
+# Custom exception handler for validation errors to get detailed logs
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    # Log the detailed validation errors
+    logger.error(f"Caught RequestValidationError: {json.dumps(exc.errors(), indent=2)}")
+    # Return the default 422 response
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
 
 # Dependency to get database session
 def get_db():
