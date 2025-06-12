@@ -60,5 +60,12 @@
     -   Key Milestones:
         -   Resolved all Docker, Nginx (including Baota specifics), and application-level errors.
         -   Created a comprehensive `DEPLOYMENT.md` with a "pitfalls" guide.
-        -   Updated `README.md`, `Structure.md`, and `Design.md` to reflect the final state.
-    -   Status: All changes committed and pushed. Project is stable.
+        -   Updated `README.md`, `Structure.md`, `Design.md`.
+    -   Follow-up Fixes:
+        -   `[completed]` Resolved `422 Unprocessable Entity` error by aligning frontend/backend expiration type definitions.
+        -   `[completed]` Resolved `500 Internal Server Error` by fixing outdated enum references in `utils.py`.
+        -   `[completed]` Resolved `UnicodeEncodeError` by correctly encoding filenames in `Content-Disposition` headers.
+        -   `[completed]` Fixed logic bug where time-based notes were being deleted after a single read.
+
+## Future Tasks
+-   `[planned]` Implement scheduled task for `cleanup_expired_notes` endpoint.

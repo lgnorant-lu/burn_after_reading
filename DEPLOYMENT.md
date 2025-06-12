@@ -15,6 +15,9 @@
     -   [5.3 陷阱三：前端构建环境变量注入失败](#53-陷阱三前端构建环境变量注入失败)
     -   [5.4 陷阱四：API 路由与健康检查的一致性](#54-陷阱四api-路由与健康检查的一致性)
     -   [5.5 陷阱五：后端响应模型验证失败 (ResponseValidationError)](#55-陷阱五后端响应模型验证失败-responsevalidationerror)
+    -   [5.6 陷阱六：前后端数据定义不匹配 (422 Unprocessable Entity)](#56-陷阱六前后端数据定义不匹配-422-unprocessable-entity)
+    -   [5.7 陷阱七：业务逻辑与数据模型不一致 (500 Internal Server Error)](#57-陷阱七业务逻辑与数据模型不一致-500-internal-server-error)
+    -   [5.8 陷阱八：HTTP头部中文编码失败 (UnicodeEncodeError)](#58-陷阱八http头部中文编码失败-unicodeencodeerror)
 6.  [手动维护命令](#6-手动维护命令)
 
 ---
@@ -160,7 +163,28 @@ graph TD
     # Manually set the has_password attribute before returning.
     note.has_password = note.password_hash is not None
     ```
-    这巧妙地解决了数据序列化问题，而无需改动底层模型。
+
+### 5.6 陷阱六：前后端数据定义不匹配 (422 Unprocessable Entity)
+
+-   **问题现象**: 在选择带有过期时间的选项（如"1小时后"）创建笔记或上传文件时，API 返回 `422` 错误。
+-   **根本原因**: 前端发送的 `expiration_type` 值 (如 `"hours_1"`) 与后端 Pydantic 模型期望接收的值 (`"one_hour"`) 不匹配。这是一个典型的"前后端约定不一致"问题。
+-   **解决方案**:
+    1.  **启用详细日志**: 临时在后端 `main.py` 中添加一个自定义的 `RequestValidationError` 异常处理器，将详细的验证错误信息打印到日志中，从而精确定位到是哪个字段的哪个值出了问题。
+    2.  **统一数据源**: 检查并修正 `frontend/src/services/api.ts` 中最源头的 `ExpirationType` 类型定义。
+    3.  **修正组件**: 检查并修正所有使用到该类型的前端组件（如 `CreatePage.vue`）中的值，确保与后端完全一致。
+    4.  **清理**: 问题解决后，移除后端的临时异常处理器。
+
+### 5.7 陷阱七：业务逻辑与数据模型不一致 (500 Internal Server Error)
+
+-   **问题现象**: 修复 `422` 问题后，带有过期时间的笔记在读取时依然被立即删除。
+-   **根本原因**: 后端的业务逻辑代码与数据模型脱节。`src/utils.py` 中的 `calculate_expiration_time` 函数还在使用旧的枚举成员名（如 `ExpirationType.HOURS_1`），而 `src/models.py` 中的枚举定义已经更新为 `ExpirationType.ONE_HOUR`，导致 `AttributeError`。
+-   **解决方案**: 深入检查并修正所有后端业务逻辑代码（如此处的 `utils.py`），确保其引用的数据模型成员与模型定义完全一致。
+
+### 5.8 陷阱八：HTTP头部中文编码失败 (UnicodeEncodeError)
+
+-   **问题现象**: 下载带有中文名的文件时，API 返回 `500` 错误。
+-   **根本原因**: `main.py` 的 `download_file` 端点在构建 `Content-Disposition` HTTP头部时，直接将未经编码的中文文件名放入其中。HTTP头部标准（latin-1）不支持此操作，导致编码失败。
+-   **解决方案**: 引入 `urllib.parse.quote`，并遵循 RFC 6266 规范，对文件名进行 UTF-8 编码，再放入HTTP头部。例如：`'Content-Disposition': f"attachment; filename*=UTF-8''{quote(filename)}"`。
 
 ---
 
