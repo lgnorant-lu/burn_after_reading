@@ -57,6 +57,18 @@ This document outlines the macro-level plan for the "Burn After Reading" web ser
         *   Progress indicators for file uploads
         *   Error handling with user-friendly messages
 
+### **Phase 3: Deployment & Operation `[completed]`
+
+-   **Goal**: Achieve a stable, repeatable, and documented production deployment.
+-   **Status**: `[completed]`
+-   **Key Milestones**:
+    -   `[completed]` Develop `docker-compose.yml` for all services.
+    -   `[completed]` Create `Dockerfile` for backend and frontend.
+    -   `[completed]` Implement a robust `deploy_server.sh` script.
+    -   `[completed]` Troubleshoot and resolve all production environment issues (Docker, Nginx, Baota, CORS, API validation).
+    -   `[completed]` Write comprehensive deployment documentation (`DEPLOYMENT.md`).
+    -   `[completed]` Update all related project documents (`README.md`, `Structure.md`, `Design.md`).
+
 ### **Phase 4: Advanced Security & Polish**
 
 *   **Goal**: Implement top-tier privacy protection and advanced features.
@@ -81,4 +93,6 @@ This document outlines the macro-level plan for the "Burn After Reading" web ser
     2.  🎯 **Frontend Build**: Production-optimized frontend build process.
     3.  🔄 **Integration**: Full-stack integration testing and optimization.
     4.  🚀 **Live Deployment**: Deploy complete application to cloud provider.
-*   **Current Status**: Backend API v0.2.0 is production-ready with comprehensive testing. 
+*   **Current Status**: Backend API v0.2.0 is production-ready with comprehensive testing.
+
+## Future Phases (Planned) 

@@ -1,40 +1,28 @@
-# 项目即时记忆与上下文快照
+# Project Context Snapshot
 
-## 项目一句话简介
-"Burn After Reading" - 企业级安全消息服务，实现真正的"阅后即焚"功能。
+*This document provides a high-level, "at-a-glance" summary of the project's current state. It should be updated at the end of major work sessions.*
 
-## 当前宏观目标/阶段
-**Phase 2: 完善** - 核心功能稳定化 ✅ **已完成**
-准备进入 **Phase 3: 部署** - Docker容器化部署
+---
 
-## 最近完成的关键里程碑
-- ✅ **阅后即焚核心逻辑修复** (2025-06-11) - 所有类型笔记访问后正确删除
-- ✅ **文件上传下载功能完全修复** (2025-06-11) - 文件链接访问和下载按钮正常工作  
-- ✅ **端到端测试100%通过率** (2025-06-11) - 所有14个测试用例通过
-- ✅ **前端组件缺陷修复** (2025-06-11) - BaseButton事件传递问题解决
+**Project Synopsis**: A secure, "burn after reading" note and file sharing application.
 
-## 近期核心动态
-- **2025-06-11**: 完成重大Bug修复任务，解决了用户反馈的所有核心问题
-- **后端API**: v0.2.0稳定运行，"阅后即焚"逻辑完全正确  
-- **前端Vue应用**: 文件和文本笔记功能完全正常
-- **测试覆盖**: 端到端测试验证所有功能正确性
+**Current High-Level Goal**: The project has achieved a stable v2.0 release with a fully documented production deployment. It is now awaiting new feature planning or maintenance tasks.
 
-## 当前活跃任务
-**即将开始**: Docker部署任务 - 容器化后端和前端服务
+**Last Major Milestone Achieved**: Successful and documented deployment to a Debian 12 server with Baota panel.
 
-## 短期内计划
-1. **容器化部署** - 创建Docker配置文件和docker-compose.yml
-2. **生产环境配置** - 环境变量、数据持久化、网络配置  
-3. **部署测试** - 验证容器化服务的完整功能
+**Recent Key Activities**:
+-   Completed a comprehensive overhaul of all project documentation, including `DEPLOYMENT.md`, `README.md`, `Structure.md`, and `Design.md`.
+-   Troubleshot and resolved a series of complex production issues.
+-   Finalized the v2.0 feature set.
 
-## 关键阻碍/高优问题
-**无当前阻碍** - 所有核心功能已修复并验证
+**Current Active Task(s)**: None. Awaiting new tasks.
 
-## 重要提醒/热点区域
-- **技术债务已清理**: BaseButton组件、阅后即焚逻辑、文件处理流程都已修复
-- **API稳定**: 后端v0.2.0版本功能完整且测试通过
-- **前端状态良好**: Vue应用所有核心功能正常
-- **数据库**: SQLite本地开发，部署时需考虑数据持久化
+**Immediate Next Steps**:
+1.  Define the scope for the next feature release (Phase 4: Advanced Security & Polish in `Plan.md`).
+2.  Or, enter a maintenance and monitoring phase.
 
-## AI内部状态摘要
-当前焦点从"Bug修复和功能完善"转向"部署和运维"。核心功能已验证稳定，准备好进入生产部署阶段。下一步需要关注容器化、环境配置、持久化存储等运维相关技术栈。 
+**Critical Blockers/Open Issues**: None at present.
+
+**"Remember This" / "Hot Spots"**:
+-   The `DEPLOYMENT.md` is now the single source of truth for all deployment-related activities.
+-   The interaction between the external Baota Nginx and the internal Docker containers is a critical architectural point. Any changes to networking or ports must consider this. 

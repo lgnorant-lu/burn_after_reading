@@ -55,3 +55,10 @@
   - 数据库持久化策略
   - 服务编排和网络配置
   - 安全性和性能优化
+
+-   `[completed]` Task: `feature/docker-deployment` - **Successfully deployed to production and documented the entire process.**
+    -   Key Milestones:
+        -   Resolved all Docker, Nginx (including Baota specifics), and application-level errors.
+        -   Created a comprehensive `DEPLOYMENT.md` with a "pitfalls" guide.
+        -   Updated `README.md`, `Structure.md`, and `Design.md` to reflect the final state.
+    -   Status: All changes committed and pushed. Project is stable.
