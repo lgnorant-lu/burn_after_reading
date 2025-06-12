@@ -77,7 +77,12 @@ server {
 EOF
 
     log_info "测试并重载Nginx配置..."
-    $NGINX_CMD -t && sudo systemctl reload nginx
+    # Correctly reload Baota or standard Nginx
+    if [ -d "/www/server/panel/vhost/nginx" ]; then
+        $NGINX_CMD -t && /etc/init.d/nginx reload
+    else
+        $NGINX_CMD -t && sudo systemctl reload nginx
+    fi
 
     # Step 2: Obtain SSL certificate
     log_info "使用Certbot申请SSL证书..."
