@@ -29,10 +29,11 @@ def get_note_and_delete(db: Session, note_id: uuid.UUID, password: Optional[str]
         if not verify_password(password, note.password_hash):
             raise HTTPException(status_code=401, detail="Invalid password")
     
-    # 阅后即焚：所有笔记访问后都立即删除
-    # 过期时间只是作为未访问笔记的自动清理机制
-    db.delete(note)
-    db.commit()
+    # FIX: Only delete the note if its expiration type is 'READ_ONCE'.
+    # Time-based notes should persist until their expiration time.
+    if note.expiration_type == models.ExpirationType.READ_ONCE:
+        db.delete(note)
+        db.commit()
     
     return note
 

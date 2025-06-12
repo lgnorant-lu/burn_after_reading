@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import status
 from sqlalchemy.sql import text
 import logging
+from urllib.parse import quote
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -154,13 +155,19 @@ def download_file(note_id: uuid.UUID, note_access: schemas.NoteAccess, db: Sessi
     # 返回文件流
     file_stream = io.BytesIO(note.file_data)
     
+    # Correctly encode the filename for the Content-Disposition header (RFC 6266)
+    filename_str = str(note.filename) if note.filename else "file"
+    filename_encoded = quote(filename_str)
+    
+    headers = {
+        'Content-Disposition': f"attachment; filename*=UTF-8''{filename_encoded}",
+        'Content-Length': str(len(note.file_data))
+    }
+    
     return StreamingResponse(
         file_stream,
         media_type=note.content_type,
-        headers={
-            "Content-Disposition": f"attachment; filename=\"{note.filename}\"",
-            "Content-Length": str(len(note.file_data))
-        }
+        headers=headers
     )
 
 # 保持向后兼容的旧API端点
