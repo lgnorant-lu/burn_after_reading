@@ -188,7 +188,7 @@ def cleanup_expired(db: Session = Depends(get_db)):
     return {"message": f"Cleaned up {count} expired notes"}
 
 # Define a health check endpoint at the root level for the entire service
-@app.get("/health", status_code=status.HTTP_200_OK, tags=["Service Health"])
+@api_router.get("/health", status_code=status.HTTP_200_OK, tags=["Service Health"])
 async def health_check():
     """
     Checks if the service is running and can connect to the database.
