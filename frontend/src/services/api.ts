@@ -12,7 +12,7 @@ const apiClient = axios.create({
 // 类型定义
 // -----------------------------------------------------------------------------
 
-export type ExpirationType = 'read_once' | 'hours_1' | 'hours_24' | 'days_7'
+export type ExpirationType = 'read_once' | 'one_hour' | 'one_day' | 'one_week'
 
 export interface CreateNoteRequest {
   expiration_type: ExpirationType

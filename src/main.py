@@ -9,8 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import status
 from sqlalchemy.sql import text
 import logging
-from fastapi.exceptions import RequestValidationError
-import json
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -24,40 +22,16 @@ models.Base.metadata.create_all(bind=engine)
 
 # Create the FastAPI app instance
 app = FastAPI(
-    title="Burn After Reading",
-    description="A secure, private way to share self-destructing messages and files.",
-    version="0.2.0",
-    expose_headers=["Content-Disposition", "Content-Length"],
+    title="Burn After Reading API",
+    description="API for creating and accessing self-destructing notes and files.",
+    version="2.0.0"
 )
 
 # Create an API router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# CORS (Cross-Origin Resource Sharing) Configuration
-# Default development origins
-default_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001", 
-    "http://localhost:3002",
-    "http://127.0.0.1:3002",
-]
-
-# Get CORS origins from environment variable or use defaults
-cors_origins_env = os.environ.get("CORS_ORIGINS")
-if cors_origins_env:
-    # Parse comma-separated origins from environment
-    origins = [origin.strip() for origin in cors_origins_env.split(",")]
-else:
-    origins = default_origins.copy()
-
-# Add legacy FRONTEND_URL for backward compatibility  
-prod_origin = os.environ.get("FRONTEND_URL")
-if prod_origin and prod_origin not in origins:
-    origins.append(prod_origin)
+# Set up CORS middleware
+origins = ["*"]  # In production, you should restrict this to your frontend's domain
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,17 +41,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition", "Content-Length"],
 )
-
-# Custom exception handler for validation errors to get detailed logs
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
-    # Log the detailed validation errors
-    logger.error(f"Caught RequestValidationError: {json.dumps(exc.errors(), indent=2)}")
-    # Return the default 422 response
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.errors()},
-    )
 
 # Dependency to get database session
 def get_db():

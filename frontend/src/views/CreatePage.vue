@@ -136,7 +136,7 @@ const formType = ref<'text' | 'file'>('text');
 
 const baseSchema = z.object({
   password: z.string().optional(),
-  expiration_type: z.enum(['read_once', 'hours_1', 'hours_24', 'days_7']),
+  expiration_type: z.enum(['read_once', 'one_hour', 'one_day', 'one_week']),
 });
 
 const textSchema = baseSchema.extend({
@@ -173,7 +173,7 @@ const { handleSubmit, isSubmitting, values, resetForm, setFieldValue, setErrors 
 const { value: contentValue, errorMessage: contentError } = useField<string>('content');
 const { errorMessage: fileError } = useField<FileList>('file');
 const { value: passwordValue, errorMessage: passwordError } = useField<string>('password');
-const { value: expirationValue, errorMessage: expirationError } = useField<'read_once' | 'hours_1' | 'hours_24' | 'days_7'>('expiration_type');
+const { value: expirationValue, errorMessage: expirationError } = useField<'read_once' | 'one_hour' | 'one_day' | 'one_week'>('expiration_type');
 
 const submissionResult = ref<CreateNoteResponse | null>(null);
 const showResult = ref(false);
@@ -285,9 +285,9 @@ const startNew = () => {
 // -----------------------------------------------------------------------------
 const expirationOptions = [
   { value: 'read_once', label: '阅后即焚' },
-  { value: 'hours_1', label: '1 小时后' },
-  { value: 'hours_24', label: '24 小时后' },
-  { value: 'days_7', label: '7 天后' },
+  { value: 'one_hour', label: '1 小时后' },
+  { value: 'one_day', label: '24 小时后' },
+  { value: 'one_week', label: '7 天后' },
 ];
 </script>
 
