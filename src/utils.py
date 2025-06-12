@@ -26,11 +26,11 @@ def calculate_expiration_time(expiration_type: ExpirationType) -> Optional[datet
     
     if expiration_type == ExpirationType.READ_ONCE:
         return None  # 阅读后立即删除，不设置时间过期
-    elif expiration_type == ExpirationType.HOURS_1:
+    elif expiration_type == ExpirationType.ONE_HOUR:
         return now + datetime.timedelta(hours=1)
-    elif expiration_type == ExpirationType.HOURS_24:
-        return now + datetime.timedelta(hours=24)
-    elif expiration_type == ExpirationType.DAYS_7:
+    elif expiration_type == ExpirationType.ONE_DAY:
+        return now + datetime.timedelta(days=1)
+    elif expiration_type == ExpirationType.ONE_WEEK:
         return now + datetime.timedelta(days=7)
     else:
         return None
